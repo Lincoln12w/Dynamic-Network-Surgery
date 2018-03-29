@@ -6,7 +6,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/vision_layers.hpp"
+#include "caffe/layers/inner_product_layer.hpp"
 #include <cmath>
 
 namespace caffe {

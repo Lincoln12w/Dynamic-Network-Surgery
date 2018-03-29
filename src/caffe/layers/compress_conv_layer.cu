@@ -5,7 +5,7 @@
 #include "caffe/util/io.hpp"
 #include "caffe/util/im2col.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/vision_layers.hpp"
+#include "caffe/layers/conv_layer.hpp"
 #include <cmath>
 
 namespace caffe {
@@ -213,10 +213,10 @@ void CConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const Dtype* bottom_data = bottom[i]->gpu_data();
     Dtype* top_data = top[i]->mutable_gpu_data();
     for (int n = 0; n < this->num_; ++n) {
-      this->forward_gpu_gemm(bottom_data + bottom[i]->offset(n), weightTmp,
-          top_data + top[i]->offset(n));
+      this->forward_gpu_gemm(bottom_data + n * this->bottom_dim_, weightTmp,
+          top_data + n * this->top_dim_);
       if (this->bias_term_) {
-        this->forward_gpu_bias(top_data + top[i]->offset(n), biasTmp);
+        this->forward_gpu_bias(top_data + n * this->top_dim_, biasTmp);
       }
     }
   }
@@ -238,7 +238,7 @@ void CConvolutionLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         CAFFE_CUDA_NUM_THREADS>>>( this->blobs_[3]->count(), bias_diff, biasMask, bias_diff);
       CUDA_POST_KERNEL_CHECK;  
       for (int n = 0; n < this->num_; ++n) {
-        this->backward_gpu_bias(bias_diff, top_diff + top[i]->offset(n));
+        this->backward_gpu_bias(bias_diff, top_diff + n * this->top_dim_);
       }
     }
     if (this->param_propagate_down_[0] || propagate_down[i]) {
@@ -250,13 +250,13 @@ void CConvolutionLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
       for (int n = 0; n < this->num_; ++n) {
         // gradient w.r.t. weight. Note that we will accumulate diffs.
         if (this->param_propagate_down_[0]) {
-          this->weight_gpu_gemm(bottom_data + bottom[i]->offset(n),
-              top_diff + top[i]->offset(n), weight_diff);
+          this->weight_gpu_gemm(bottom_data + n * this->bottom_dim_,
+              top_diff + n * this->top_dim_, weight_diff);
         }
         // gradient w.r.t. bottom data, if necessary.
         if (propagate_down[i]) {
-          this->backward_gpu_gemm(top_diff + top[i]->offset(n), weightTmp,
-              bottom_diff + bottom[i]->offset(n));
+          this->backward_gpu_gemm(top_diff + n * this->top_dim_, weightTmp,
+              bottom_diff + n * this->bottom_dim_);
         }
       }
     }

@@ -6,7 +6,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/vision_layers.hpp"
+#include "caffe/layers/inner_product_layer.hpp"
 #include <cmath>
 
 namespace caffe {
@@ -147,7 +147,7 @@ void CInnerProductLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
 					if (bias[k]!=0) ncount++;
 				}       
 			}
-			this->mu /= ncount; this->std -= ncount*mu*mu; 
+			this->mu /= ncount; this->std -= ncount * mu * mu; 
 			this->std /= ncount; this->std = sqrt(std);
 			LOG(INFO)<<mu<<"  "<<std<<"  "<<ncount<<"\n";        
 		}  		
@@ -172,9 +172,9 @@ void CInnerProductLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
 		Dtype r = static_cast<Dtype>(rand())/static_cast<Dtype>(RAND_MAX);
 		if (pow(1+(this->gamma)*(this->iter_),-(this->power))>r && (this->iter_)<(this->iter_stop_)) { 	
 			for (unsigned int k = 0;k < this->blobs_[0]->count(); ++k) {
-				if (weightMask[k]==1 && fabs(weight[k])<=0.9*std::max(mu+crate*std,Dtype(0)))
+				if (weightMask[k]==1 && fabs(weight[k])<=0.9*std::max(mu+crate*std,Dtype(0))) // a_k
 					weightMask[k] = 0;
-				else if (weightMask[k]==0 && fabs(weight[k])>1.1*std::max(mu+crate*std,Dtype(0)))
+				else if (weightMask[k]==0 && fabs(weight[k])>1.1*std::max(mu+crate*std,Dtype(0)))  //b_k
 					weightMask[k] = 1;
 			}	
 			if (this->bias_term_) {       
